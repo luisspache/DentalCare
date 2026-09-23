@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DentalCare Pro - Sistema Odontológico Universal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .tooth-face { transition: all 0.2s; cursor: pointer; }
+    .tooth-face:hover { fill: #3b82f6 !important; opacity: 0.8; }
+    .tooth-face.selected { fill: #ef4444 !important; }
+    .tooth-face.restored { fill: #10b981 !important; }
+    .tooth-face.extracted { fill: #6b7280 !important; }
+    @media print {
+      .no-print { display: none !important; }
+      .print-only { display: block !important; }
+    }
+  </style>
+</head>
+<body class="bg-slate-100 font-sans text-slate-800 antialiased">
+
+  <!-- TELA DE AUTENTICAÇÃO / LOGIN -->
+  <div id="authContainer" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/90 backdrop-blur-sm p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 border border-slate-200">
+      <div class="text-center mb-6">
+        <div class="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg shadow-blue-500/30">
+          <i class="fas fa-[#fa0] fa-tooth text-3xl text-white"></i>
+        </div>
+        <h2 class="text-2xl font-bold text-slate-800">DentalCare Pro</h2>
+        <p class="text-xs text-slate-500 mt-1">Gestão Clínica Odontológica</p>
+      </div>
+
+      <!-- Abas Auth -->
+      <div class="flex border-b border-slate-200 mb-6">
+        <button id="tabLoginBtn" onclick="switchAuthTab('login')" class="flex-1 py-2 font-semibold text-sm border-b-2 border-blue-600 text-blue-600">Entrar</button>
+        <button id="tabRegisterBtn" onclick="switchAuthTab('register')" class="flex-1 py-2 font-semibold text-sm border-b-2 border-transparent text-slate-400 hover:text-slate-600">Cadastrar-se</button>
+      </div>
+
+      <!-- Form Login -->
+      <form id="formLogin" onsubmit="handleLogin(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">E-mail ou CRO</label>
+          <input type="text" id="loginUser" required class="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm" placeholder="seu@email.com ou CRO/UF">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Senha</label>
+          <input type="password" id="loginPass" required class="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm" placeholder="••••••••">
+        </div>
+        <div class="flex items-center justify-between text-xs">
+          <label class="flex items-center text-slate-600">
+            <input type="checkbox" class="rounded text-blue-600 focus:ring-blue-500 mr-2"> Lembrar de mim
+          </label>
+          <button type="button" onclick="openForgotModal()" class="text-blue-600 hover:underline font-medium">Esqueceu a senha?</button>
+        </div>
+        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg shadow-md transition-all text-sm">Acessar Sistema</button>
+        
+        <div class="relative my-4">
+          <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-slate-200"></div></div>
+          <div class="relative flex justify-center text-xs text-slate-400"><span class="bg-white px-2">Atalhos de Teste</span></div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <button type="button" onclick="loginDemo('admin')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs py-2 px-3 rounded-lg border border-slate-300 font-medium transition-all">Entrar como Admin</button>
+          <button type="button" onclick="loginDemo('dentist')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs py-2 px-3 rounded-lg border border-slate-300 font-medium transition-all">Entrar como Dentista</button>
+        </div>
+      </form>
+
+      <!-- Form Cadastro -->
+      <form id="formRegister" onsubmit="handleRegister(event)" class="space-y-3 hidden">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Nome Completo</label>
+          <input type="text" id="regName" required class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" placeholder="Dr. João Silva">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">E-mail</label>
+          <input type="email" id="regEmail" required class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" placeholder="drjoao@dentalcare.com">
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">CRO / UF</label>
+            <input type="text" id="regCro" required class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" placeholder="12345/SP">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Perfil de Acesso</label>
+            <select id="regRole" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white">
+              <option value="Admin">Administrador</option>
+              <option value="Dentista">Dentista Assistente</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Senha</label>
+          <input type="password" id="regPass" required class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" placeholder="••••••••">
+        </div>
+        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-lg shadow-md transition-all text-sm mt-2">Criar Minha Conta</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL ESQUECEU A SENHA -->
+  <div id="forgotModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200">
+      <h3 class="text-lg font-bold text-slate-800 mb-2">Recuperar Senha</h3>
+      <p class="text-xs text-slate-500 mb-4">Informe o e-mail ou CRO cadastrado para redefinir sua senha de acesso.</p>
+      <form onsubmit="handleResetPassword(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">E-mail ou CRO</label>
+          <input type="text" id="forgotInput" required class="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Digite seu e-mail ou CRO">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Nova Senha</label>
+          <input type="password" id="forgotNewPass" required class="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Digite a nova senha">
+        </div>
+        <div class="flex gap-2 justify-end pt-2">
+          <button type="button" onclick="closeForgotModal()" class="px-4 py-2 bg-slate-100 text-slate-600 rounded-lg text-xs font-semibold">Cancelar</button>
+          <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700">Alterar Senha</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- LAYOUT PRINCIPAL -->
+  <div id="appContainer" class="flex h-screen overflow-hidden">
+    <!-- BARRA LATERAL -->
+    <aside class="w-64 bg-slate-900 text-slate-300 flex flex-col no-print">
+      <div class="p-5 flex items-center gap-3 border-b border-slate-800">
+        <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold shadow-lg shadow-blue-500/30">
+          <i class="fas fa-tooth text-xl"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-white leading-tight">DentalCare</h1>
+          <span class="text-[10px] bg-blue-900 text-blue-300 px-2 py-0.5 rounded-full font-semibold">PRO v2.5</span>
+        </div>
+      </div>
+
+      <!-- Menu Navegação -->
+      <nav class="flex-1 overflow-y-auto p-4 space-y-1">
+        <button onclick="navigate('dashboard')" class="nav-btn active w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all hover:bg-slate-800 hover:text-white">
+          <i class="fas fa-chart-line w-5 text-blue-400"></i> Dashboard
+        </button>
+        <button onclick="navigate('pacientes')" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all hover:bg-slate-800 hover:text-white">
+          <i class="fas fa-user-injured w-5 text-emerald-400"></i> Pacientes
+        </button>
+        <button onclick="navigate('odontograma')" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all hover:bg-slate-800 hover:text-white">
+          <i class="fas fa-teeth w-5 text-purple-400"></i> Odontograma
+        </button>
+        <button onclick="navigate('agenda')" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all hover:bg-slate-800 hover:text-white">
+          <i class="fas fa-calendar-alt w-5 text-amber-400"></i> Agenda
+        </button>
+        <button onclick="navigate('documentos')" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all hover:bg-slate-800 hover:text-white">
+          <i class="fas fa-file-medical w-5 text-cyan-400"></i> Receitas/Docs
+        </button>
+
+        <!-- Apenas Admin -->
+        <div id="adminNavGroup" class="pt-4 border-t border-slate-800/80 mt-4 space-y-1">
+          <span class="px-3 text-[10px] font-bold tracking-wider text-slate-500 uppercase">Administração</span>
+          <button onclick="navigate('dentistas')" class="nav-btn admin-only w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all hover:bg-slate-800 hover:text-white">
+            <i class="fas fa-user-md w-5 text-rose-400"></i> Corpo Clínico
+          </button>
+          <button onclick="navigate('estoque')" class="nav-btn admin-only w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all hover:bg-slate-800 hover:text-white">
+            <i class="fas fa-boxes w-5 text-orange-400"></i> Estoque
+          </button>
+          <button onclick="navigate('financeiro')" class="nav-btn admin-only w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all hover:bg-slate-800 hover:text-white">
+            <i class="fas fa-wallet w-5 text-emerald-400"></i> Financeiro
+          </button>
+        </div>
+      </nav>
+
+      <!-- Rodapé Usuário Logado -->
+      <div class="p-4 border-t border-slate-800 bg-slate-950/40">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2 overflow-hidden">
+            <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center font-bold text-xs text-white uppercase" id="userAvatar">DR</div>
+            <div class="truncate">
+              <div class="text-xs font-bold text-white truncate" id="userName">Dr. Usuário</div>
+              <span class="text-[10px] px-1.5 py-0.2 rounded font-semibold bg-blue-900/60 text-blue-300" id="userRoleBadge">Admin</span>
+            </div>
+          </div>
+          <button onclick="logout()" title="Sair" class="text-slate-400 hover:text-red-400 p-1.5 rounded-lg hover:bg-slate-800">
+            <i class="fas fa-sign-out-alt"></i>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ÁREA PRINCIPAL DE CONTEÚDO -->
+    <main class="flex-1 flex flex-col overflow-hidden bg-slate-50">
+      <!-- HEADER SUPERIOR -->
+      <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 no-print">
+        <h2 id="pageTitle" class="text-lg font-bold text-slate-800">Dashboard</h2>
+        <div class="flex items-center gap-3">
+          <button onclick="carregarDadosDemo()" class="admin-only bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition-all">
+            <i class="fas fa-database text-blue-500"></i> Carregar Demo
+          </button>
+          <button onclick="zerarBanco()" class="admin-only bg-red-50 hover:bg-red-100 text-red-600 text-xs px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition-all">
+            <i class="fas fa-trash-alt"></i> Zerar Banco
+          </button>
+        </div>
+      </header>
+
+      <!-- ÁREA DAS VIEWS -->
+      <div class="flex-1 overflow-y-auto p-6" id="viewContainer">
+        
+        <!-- VIEW: DASHBOARD -->
+        <section id="view-dashboard" class="view-content space-y-6">
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+              <div>
+                <p class="text-xs font-semibold text-slate-400 uppercase">Consultas Hoje</p>
+                <h3 class="text-2xl font-bold text-slate-800 mt-1" id="kpiConsultasHoje">0</h3>
+              </div>
+              <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 text-xl"><i class="fas fa-calendar-check"></i></div>
+            </div>
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+              <div>
+                <p class="text-xs font-semibold text-slate-400 uppercase">Total Pacientes</p>
+                <h3 class="text-2xl font-bold text-slate-800 mt-1" id="kpiTotalPacientes">0</h3>
+              </div>
+              <div class="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 text-xl"><i class="fas fa-users"></i></div>
+            </div>
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between admin-only">
+              <div>
+                <p class="text-xs font-semibold text-slate-400 uppercase">Faturamento Mês</p>
+                <h3 class="text-2xl font-bold text-slate-800 mt-1" id="kpiFaturamento">R$ 0,00</h3>
+              </div>
+              <div class="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center text-purple-600 text-xl"><i class="fas fa-dollar-sign"></i></div>
+            </div>
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between admin-only">
+              <div>
+                <p class="text-xs font-semibold text-slate-400 uppercase">Itens em Alerta</p>
+                <h3 class="text-2xl font-bold text-slate-800 mt-1" id="kpiEstoqueAlerta">0</h3>
+              </div>
+              <div class="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600 text-xl"><i class="fas fa-exclamation-triangle"></i></div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+              <h4 class="font-bold text-slate-800 mb-4 text-sm">Próximos Atendimentos</h4>
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs">
+                  <thead class="bg-slate-50 text-slate-500 uppercase">
+                    <tr><th class="p-2">Paciente</th><th class="p-2">Dentista</th><th class="p-2">Horário</th><th class="p-2">Status</th></tr>
+                  </thead>
+                  <tbody id="tableDashConsultas" class="divide-y divide-slate-100"></tbody>
+                </table>
+              </div>
+            </div>
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm admin-only">
+              <h4 class="font-bold text-slate-800 mb-4 text-sm">Desempenho Financeiro</h4>
+              <canvas id="chartFinanceiro" class="w-full max-h-56"></canvas>
+            </div>
+          </div>
+        </section>
+
+        <!-- VIEW: PACIENTES -->
+        <section id="view-pacientes" class="view-content hidden space-y-4">
+          <div class="flex justify-between items-center">
+            <input type="text" id="searchPaciente" oninput="renderPacientes()" placeholder="Buscar por nome ou CPF..." class="px-4 py-2 rounded-lg border border-slate-300 text-sm w-72">
+            <button onclick="openModalPaciente()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs px-4 py-2.5 rounded-lg flex items-center gap-2"><i class="fas fa-plus"></i> Novo Paciente</button>
+          </div>
+          <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 text-slate-500 uppercase font-bold">
+                <tr><th class="p-3">Nome</th><th class="p-3">CPF</th><th class="p-3">Telefone</th><th class="p-3">Convênio</th><th class="p-3 text-right">Ações</th></tr>
+              </thead>
+              <tbody id="tablePacientes" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- VIEW: ODONTOGRAMA -->
+        <section id="view-odontograma" class="view-content hidden space-y-6">
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-wrap gap-4 items-center justify-between">
+            <div class="flex items-center gap-3">
+              <label class="text-xs font-bold text-slate-600">Paciente:</label>
+              <select id="odontogramaPacienteSelect" onchange="carregarOdontogramaPaciente()" class="px-3 py-2 border rounded-lg text-xs bg-slate-50 w-64"></select>
+            </div>
+            <div class="flex gap-2">
+              <button onclick="toggleDentition('permanente')" id="btnPerm" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white">Permanente</button>
+              <button onclick="toggleDentition('decidua')" id="btnDec" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-200 text-slate-700">Decídua (Infantil)</button>
+            </div>
+          </div>
+
+          <!-- SVG ODONTOGRAMA -->
+          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm overflow-x-auto text-center">
+            <h4 class="text-xs font-bold text-slate-400 uppercase mb-4">Arcada Dentária Superior / Inferior</h4>
+            <div id="teethContainer" class="flex flex-col items-center gap-6 min-w-[700px]"></div>
+          </div>
+
+          <!-- REGISTRO DE PROCEDIMENTO NO DENTE -->
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-600 mb-1">Dente Selecionado</label>
+              <input type="text" id="odontoDente" readonly class="w-full bg-slate-100 px-3 py-2 rounded-lg text-xs font-bold text-blue-600">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-600 mb-1">Face</label>
+              <select id="odontoFace" class="w-full px-3 py-2 border rounded-lg text-xs bg-white">
+                <option value="Geral">Geral (Todo o Dente)</option>
+                <option value="Vestibular">Vestibular</option>
+                <option value="Lingual">Lingual / Palatina</option>
+                <option value="Mesial">Mesial</option>
+                <option value="Distal">Distal</option>
+                <option value="Oclusal">Oclusal / Incisal</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-600 mb-1">Procedimento</label>
+              <input type="text" id="odontoProcedimento" placeholder="Ex: Restauração Resina" class="w-full px-3 py-2 border rounded-lg text-xs">
+            </div>
+            <div class="flex items-end">
+              <button onclick="salvarProcedimentoOdonto()" class="w-full bg-blue-600 text-white font-bold text-xs py-2 px-4 rounded-lg hover:bg-blue-700">Registrar Procedimento</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- OUTRAS VIEWS (AGENDA, DOCUMENTOS, DENTISTAS, ESTOQUE, FINANCEIRO) -->
+        <section id="view-agenda" class="view-content hidden"><h3 class="font-bold">Módulo de Agenda</h3></section>
+        <section id="view-documentos" class="view-content hidden"><h3 class="font-bold">Módulo de Receitas e Documentos</h3></section>
+        <section id="view-dentistas" class="view-content hidden admin-only"><h3 class="font-bold">Gestão de Corpo Clínico</h3></section>
+        <section id="view-estoque" class="view-content hidden admin-only"><h3 class="font-bold">Controle de Estoque</h3></section>
+        <section id="view-financeiro" class="view-content hidden admin-only"><h3 class="font-bold">Módulo Financeiro</h3></section>
+
+      </div>
+    </main>
+  </div>
+<!-- JAVASCRIPT DA APLICAÇÃO -->
+  <script>
+    // ESTADO DA APLICAÇÃO
+    let currentUser = JSON.parse(localStorage.getItem('dc_logged_user')) || null;
+    let pacientes = JSON.parse(localStorage.getItem('dc_pacientes')) || [];
+    let dentistas = JSON.parse(localStorage.getItem('dc_dentistas')) || [];
+    let consultas = JSON.parse(localStorage.getItem('dc_consultas')) || [];
+    let odontoData = JSON.parse(localStorage.getItem('dc_odonto')) || [];
+
+    // INICIALIZAÇÃO
+    window.onload = function() {
+      checkAuth();
+      renderAll();
+    };
+
+    function checkAuth() {
+      const authContainer = document.getElementById('authContainer');
+      if (!currentUser) {
+        authContainer.classList.remove('hidden');
+      } else {
+        authContainer.classList.add('hidden');
+        document.getElementById('userName').innerText = currentUser.nome;
+        document.getElementById('userRoleBadge').innerText = currentUser.role;
+        document.getElementById('userAvatar').innerText = currentUser.nome.substring(0, 2).toUpperCase();
+
+        // Aplicar Restrições de Perfil (Admin vs Dentista)
+        const adminElements = document.querySelectorAll('.admin-only');
+        adminElements.forEach(el => {
+          if (currentUser.role !== 'Admin') {
+            el.classList.add('hidden');
+          } else {
+            el.classList.remove('hidden');
+          }
+        });
+      }
+    }
+
+    // AUTHENTICATION LOGIC
+    function switchAuthTab(tab) {
+      if (tab === 'login') {
+        document.getElementById('formLogin').classList.remove('hidden');
+        document.getElementById('formRegister').classList.add('hidden');
+        document.getElementById('tabLoginBtn').className = 'flex-1 py-2 font-semibold text-sm border-b-2 border-blue-600 text-blue-600';
+        document.getElementById('tabRegisterBtn').className = 'flex-1 py-2 font-semibold text-sm border-b-2 border-transparent text-slate-400 hover:text-slate-600';
+      } else {
+        document.getElementById('formLogin').classList.add('hidden');
+        document.getElementById('formRegister').classList.remove('hidden');
+        document.getElementById('tabRegisterBtn').className = 'flex-1 py-2 font-semibold text-sm border-b-2 border-blue-600 text-blue-600';
+        document.getElementById('tabLoginBtn').className = 'flex-1 py-2 font-semibold text-sm border-b-2 border-transparent text-slate-400 hover:text-slate-600';
+      }
+    }
+
+    function handleLogin(e) {
+      e.preventDefault();
+      const userVal = document.getElementById('loginUser').value.trim();
+      const passVal = document.getElementById('loginPass').value;
+
+      const found = dentistas.find(d => (d.email === userVal || d.cro === userVal) && d.senha === passVal);
+      if (found) {
+        currentUser = found;
+        localStorage.setItem('dc_logged_user', JSON.stringify(currentUser));
+        checkAuth();
+      } else {
+        alert('Credenciais inválidas ou conta inexistente. Por favor, cadastre-se primeiro.');
+      }
+    }
+
+    function handleRegister(e) {
+      e.preventDefault();
+      const newDoc = {
+        id: Date.now(),
+        nome: document.getElementById('regName').value,
+        email: document.getElementById('regEmail').value,
+        cro: document.getElementById('regCro').value,
+        role: document.getElementById('regRole').value,
+        senha: document.getElementById('regPass').value
+      };
+
+      dentistas.push(newDoc);
+      localStorage.setItem('dc_dentistas', JSON.stringify(dentistas));
+      currentUser = newDoc;
+      localStorage.setItem('dc_logged_user', JSON.stringify(currentUser));
+      checkAuth();
+    }
+
+    function loginDemo(role) {
+      if (dentistas.length === 0) {
+        alert('Nenhum utilizador registado ainda! Por favor, utilize a aba "Cadastrar-se" para criar a primeira conta.');
+        switchAuthTab('register');
+        return;
+      }
+      const found = dentistas.find(d => role === 'admin' ? d.role === 'Admin' : d.role === 'Dentista');
+      if (found) {
+        currentUser = found;
+        localStorage.setItem('dc_logged_user', JSON.stringify(currentUser));
+        checkAuth();
+      } else {
+        alert(`Nenhum perfil do tipo ${role} encontrado. Crie um cadastro nessa categoria.`);
+      }
+    }
+
+    function logout() {
+      currentUser = null;
+      localStorage.removeItem('dc_logged_user');
+      checkAuth();
+    }
+
+    function openForgotModal() { document.getElementById('forgotModal').classList.remove('hidden'); }
+    function closeForgotModal() { document.getElementById('forgotModal').classList.add('hidden'); }
+
+    function handleResetPassword(e) {
+      e.preventDefault();
+      const input = document.getElementById('forgotInput').value;
+      const newPass = document.getElementById('forgotNewPass').value;
+
+      const idx = dentistas.findIndex(d => d.email === input || d.cro === input);
+      if (idx !== -1) {
+        dentistas[idx].senha = newPass;
+        localStorage.setItem('dc_dentistas', JSON.stringify(dentistas));
+        alert('Senha redefinida com sucesso! Faça login com a nova senha.');
+        closeForgotModal();
+      } else {
+        alert('Utilizador não encontrado no sistema.');
+      }
+    }
+
+    // CORRECÇÃO COMPLETA: ZERAR BANCO DE DADOS
+    function zerarBanco() {
+      if (confirm('⚠️ TEM CERTEZA? Isto apagará TODOS os pacientes, cadastros e históricos do sistema!')) {
+        localStorage.clear();
+        pacientes = [];
+        dentistas = [];
+        consultas = [];
+        odontoData = [];
+        currentUser = null;
+        renderAll();
+        alert('Banco de dados zerado com sucesso!');
+        window.location.reload();
+      }
+    }
+
+    function carregarDadosDemo() {
+      pacientes = [
+        { id: 1, nome: 'Maria Oliveira', cpf: '111.222.333-44', telefone: '(11) 98888-7777', convenio: 'Bradesco Dental' },
+        { id: 2, nome: 'Carlos Eduardo', cpf: '555.666.777-88', telefone: '(11) 97777-6666', convenio: 'Particular' }
+      ];
+      dentistas = [
+        { id: 101, nome: 'Dr. Roberto Santos', email: 'admin@dental.com', cro: '12345/SP', role: 'Admin', senha: '123' }
+      ];
+      localStorage.setItem('dc_pacientes', JSON.stringify(pacientes));
+      localStorage.setItem('dc_dentistas', JSON.stringify(dentistas));
+      renderAll();
+      alert('Dados de teste carregados com sucesso!');
+    }
+
+    function navigate(viewName) {
+      document.querySelectorAll('.view-content').forEach(el => el.classList.add('hidden'));
+      const target = document.getElementById(`view-${viewName}`);
+      if (target) target.classList.remove('hidden');
+      document.getElementById('pageTitle').innerText = viewName.toUpperCase();
+    }
+
+    function renderAll() {
+      document.getElementById('kpiTotalPacientes').innerText = pacientes.length;
+      document.getElementById('kpiConsultasHoje').innerText = consultas.length;
+    }
+  </script>
+</body>
+</html>
